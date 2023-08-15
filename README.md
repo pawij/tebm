@@ -3,7 +3,7 @@ The TEBM is a generative model that can estimate the timing and uncertainty of e
 
 If you use the TEBM, please cite this paper:
 
-P.A. Wijeratne, A. Eshaghi, W.J. Scotton, et al. The temporal event-based model: learning event timelines in progressive diseases. Imaging Neuroscience 2023. doi: https://doi.org/10.1162/imag_a_00010
+Wijeratne, P.A., Eshaghi, A., Scotton, W.J., et al. The temporal event-based model: learning event timelines in progressive diseases. Imaging Neuroscience 2023. doi: https://doi.org/10.1162/imag_a_00010
 
 # TEBM install requirements
 Linux OS (Ubuntu 16.04.1, or greater)
@@ -17,11 +17,18 @@ pickle
 sklearn  
 matplotlib
 
-install and link "kde_ebm" package, available here: https://github.com/ucl-pond/kde_ebm
+Install and link "kde_ebm" package, available here:
 
-navigate to top directory and issue the following command
+https://github.com/ucl-pond/kde_ebm
+
+Bavigate to top directory and issue the following command:
 
 CC=g++ CFLAGS=-lstdc++ python setup.py install
 
+# Running the code
+Navigate to examples/ and issue the following command:
+
+python run_tebm_sim.py
+
 # Worked example
-to follow...
+To follow...
