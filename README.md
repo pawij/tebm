@@ -13,7 +13,8 @@ python>=3.7
 numpy>=1.19.5  
 scipy>=1.7.3  
 pandas  
-pickle  
+pickle
+pathos
 sklearn  
 matplotlib
 
