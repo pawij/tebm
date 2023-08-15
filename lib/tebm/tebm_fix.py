@@ -167,7 +167,7 @@ class MixtureTEBM(BaseTEBM):
         if model_type == 'KDE':
             mixtures = fit_all_kde_models(X0, labels)
         else:
-            mixtures = fit_all_gmm_models(X0, labels, constrained)
+            mixtures = fit_all_gmm_models(X0, labels)#, constrained)
         # might want to fit sequence without controls
         if cut_controls:
             print ('Cutting controls from sequence fit!')

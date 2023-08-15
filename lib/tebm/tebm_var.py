@@ -437,7 +437,7 @@ class MixtureTEBM(_BaseTEBM):
         if model_type == 'KDE':
             mixtures = fit_all_kde_models(X0, labels_mixture)
         else:
-            mixtures = fit_all_gmm_models(X0, labels_mixture, constrained=constrained)
+            mixtures = fit_all_gmm_models(X0, labels_mixture)#, constrained=constrained)
         # might want to fit sequence without controls
         if cut_controls:
             print ('Cutting controls from sequence fit!')
@@ -479,11 +479,11 @@ class MixtureTEBM(_BaseTEBM):
                          seq_mat[:,0],
                          n_iter)
         # will return shape (n_start, 2)
-        par_mat = np.array(pool.map(copier, range(n_start)))
+        par_mat = list(pool.map(copier, range(n_start)))
         # distribute to local matrices
         for i in range(n_start):
-            ml_seq_mat[:, :, i] = par_mat[i, 0]
-            ml_like_mat[i] = par_mat[i, 1]
+            ml_seq_mat[:, :, i] = par_mat[i][0]
+            ml_like_mat[i] = par_mat[i][1]
         ix = np.argmax(ml_like_mat)
         ml_seq = ml_seq_mat[:, :, ix]
         ml_like = ml_like_mat[ix]
@@ -986,11 +986,11 @@ class ZscoreTEBM(_BaseTEBM):
                          seq_mat[:,0],
                          n_iter)
         # will return shape (n_start, 2)
-        par_mat = np.array(pool.map(copier, range(n_start)))
+        par_mat = list(pool.map(copier, range(n_start)))
         # distribute to local matrices
         for i in range(n_start):
-            ml_seq_mat[:, :, i] = par_mat[i, 0]
-            ml_like_mat[i] = par_mat[i, 1]
+            ml_seq_mat[:, :, i] = par_mat[i][0]
+            ml_like_mat[i] = par_mat[i][1]
         ix = np.argmax(ml_like_mat)
         ml_seq = ml_seq_mat[:, :, ix]
         ml_like = ml_like_mat[ix]
