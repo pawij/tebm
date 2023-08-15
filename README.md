@@ -21,7 +21,7 @@ Install and link "kde_ebm" package, available here:
 
 https://github.com/ucl-pond/kde_ebm
 
-Bavigate to top directory and issue the following command:
+Navigate to top directory and issue the following command:
 
 CC=g++ CFLAGS=-lstdc++ python setup.py install
 
