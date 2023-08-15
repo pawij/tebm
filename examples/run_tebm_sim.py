@@ -18,12 +18,12 @@ import warnings
 warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")
 
 ############################################################################################################## USER INPUT START
-is_ebm = True # set True if you want to use the standard EBM
+is_ebm = False # set True if you want to use the standard EBM
 is_cut = False # cut people starting in final state(s); for testing effect of right-censoring
-sigma_noise = 0.01 # simulated measurement noise
-n_ppl = 200 # number of people
+sigma_noise = 0.1 # simulated measurement noise
+n_ppl = 100 # number of people
 n_bms = 5 # number of biomarkers
-n_obs = 3 # number of observations per person. Set = None for random number of observations per person
+n_obs = 2 # number of observations per person. Set = None for random number of observations per person
 model_type = 'GMM' # type of likelihood model, can be one of: 'GMM', KDE', 'Zscore'
 if model_type == 'Zscore':
     n_zscores = 3 # number of z-score events per biomarker
@@ -166,7 +166,7 @@ else:
     print ('Likelihood model not recognised! quit()')
     quit()
 
-fig, ax = plotting.mixture_model_grid(X0, labels0, mixtures, biom_labels)
+fig, ax = plotting.mixture_model_grid(X0, labels, mixtures, biom_labels)
 for i in range(len(ax)):
     for j in range(len(ax)-1):
         ax[i,j].set_yscale('log')
