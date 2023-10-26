@@ -1,6 +1,7 @@
-# Temporal Event-Based Models
-# Author: Peter Wijeratne (p.wijeratne@pm.me)
-# Adapted from code written for 'hmmlearn' (https://github.com/hmmlearn/hmmlearn)
+# Variable time interval Temporal Event-Based Model
+# Derived class from base_var.py
+# Author: Peter Wijeratne (p.wijeratne@sussex.ac.uk)
+
 import logging
 
 import numpy as np

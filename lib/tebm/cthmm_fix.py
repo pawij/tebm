@@ -1,6 +1,7 @@
 # Fixed interval CTHMM
 # Author: Peter Wijeratne (p.wijeratne@pm.me)
 # Adapted from code written for 'hmmlearn' (https://github.com/hmmlearn/hmmlearn)
+
 import logging
 
 import numpy as np

@@ -1,6 +1,6 @@
 # Fixed time interval Temporal Event-Based Model
 # Base class
-# Author: Peter Wijeratne (p.wijeratne@pm.me)
+# Author: Peter Wijeratne (p.wijeratne@sussex.ac.uk)
 
 import numpy as np
 from scipy.special import logsumexp

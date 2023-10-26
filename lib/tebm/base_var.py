@@ -1,3 +1,7 @@
+# Variable time interval Temporal Event-Based Model
+# Base class
+# Author: Peter Wijeratne (p.wijeratne@sussex.ac.uk)
+
 import logging
 import string
 import sys

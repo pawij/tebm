@@ -1,6 +1,7 @@
 # Fixed time interval Temporal Event-Based Model
 # Derived class from base_fix.py
-# Author: Peter Wijeratne (p.wijeratne@pm.me)
+# Author: Peter Wijeratne (p.wijeratne@sussex.ac.uk)
+# Adapted from code written for 'hmmlearn' (https://github.com/hmmlearn/hmmlearn)
 
 import numpy as np
 from scipy.special import logsumexp
