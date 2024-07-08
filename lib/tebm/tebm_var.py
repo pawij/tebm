@@ -396,8 +396,6 @@ class MixtureTEBM(_BaseTEBM):
                 self.fit()
                 possible_likelihood[index] = self.score(self.X, self.lengths, self.jumps)
                 possible_sequences[index, :] = self.S
-                if np.all(new_sequence==np.array([[9,5,3,6,4,0,2,8,7,1]])) or np.all(new_sequence==np.array([[9,5,3,6,4,0,8,7,2,1]])):
-                    print (new_sequence,possible_likelihood[index])
             max_likelihood = max(possible_likelihood)
             max_S = possible_sequences[np.where(possible_likelihood == max_likelihood)[0][0]]
             if count<(N-1):
@@ -425,16 +423,17 @@ class MixtureTEBM(_BaseTEBM):
                 break
         return cur_seq, cur_like
 
-    def _fit_tebm(self, labels, n_start, n_iter, n_cores, model_type='GMM', constrained=False, cut_controls=False, X_mixture=[], lengths_mixture=[], labels_mixture=[]):
+    def _fit_tebm(self, labels, n_start, n_iter, n_cores, model_type='GMM', constrained=False, cut_controls=False, X0=[], X_mixture=[], lengths_mixture=[], labels_mixture=[]):
         # only use baseline data to fit mixture models
         if len(X_mixture) == 0:
             X_mixture = self.X
             lengths_mixture = self.lengths
             labels_mixture = labels
-        X0 = []
-        for i in range(len(lengths_mixture)):
-            X0.append(X_mixture[np.sum(lengths_mixture[:i])])
-        X0 = np.array(X0)
+        if len(X0) == 0:
+            X0 = []
+            for i in range(len(lengths_mixture)):
+                X0.append(X_mixture[np.sum(lengths_mixture[:i])])
+            X0 = np.array(X0)
         if model_type == 'KDE':
             mixtures = fit_all_kde_models(X0, labels_mixture)
         else:
@@ -464,23 +463,23 @@ class MixtureTEBM(_BaseTEBM):
         if n_cores>1:
             pool = pathos.multiprocessing.ProcessingPool()
             pool.ncpus = n_cores
+            # instantiate function as class to pass to pool.map
+            # first calculate array of sequences - do this first or same random number will be used simultaneously on each processor
+            # will return shape (n_start, 1)
+            copier = partial(self._init_seq)
+            # will return shape (n_start, 1)
+            seq_mat = np.array(pool.map(copier, range(n_start)))
+            # now optimise
+            copier = partial(self._seq_em,
+                             seq_mat[:,0],
+                             n_iter)
+            # will return shape (n_start, 2)
+            par_mat = list(pool.map(copier, range(n_start)))
         else:
             # FIXME: serial version doesn't work
             #            pool = pathos.serial.SerialPool()
-            pool = pathos.multiprocessing.ProcessingPool()
-            pool.ncpus = n_cores
-        # instantiate function as class to pass to pool.map
-        # first calculate array of sequences - do this first or same random number will be used simultaneously on each processor
-        # will return shape (n_start, 1)
-        copier = partial(self._init_seq)
-        # will return shape (n_start, 1)
-        seq_mat = np.array(pool.map(copier, range(n_start)))
-        # now optimise
-        copier = partial(self._seq_em,
-                         seq_mat[:,0],
-                         n_iter)
-        # will return shape (n_start, 2)
-        par_mat = list(pool.map(copier, range(n_start)))
+            seq_mat = np.array([self._init_seq(i) for i in range(n_start)])
+            par_mat = [self._seq_em(seq_mat[:,0], n_iter, i) for i in range(n_start)]
         # distribute to local matrices
         for i in range(n_start):
             ml_seq_mat[:, :, i] = par_mat[i][0]
@@ -497,6 +496,7 @@ class MixtureTEBM(_BaseTEBM):
         #FIXME: issue with seeding by seed_num is that every time you call _fit_tebm, it will initialise the same sequences
         # ensure randomness across parallel processes
         np.random.seed(seed_num)
+        #        rng = np.random.default_rng(seed_num)
         S = np.arange(self.n_features)
         np.random.shuffle(S)
         return [S]

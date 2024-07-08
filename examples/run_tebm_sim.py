@@ -40,7 +40,7 @@ time_mean = scale # used when simulating data
 init_params = 's' # initialise start / initial probability to uniform prior
 fit_params = 'st' # fit start probability and transition matrix
 tol = 1E-3 # tolerance for both inner and outer EM
-n_cores = 4 # number of cores used for parallelising start point
+n_cores = 1 # number of cores used for parallelising start point
 n_start = 4 # number of outer EM start points 
 # set random seed
 try:
@@ -74,6 +74,19 @@ if model_type=='Zscore':
     X, lengths, jumps, labels, X0, stages_true, times, seq_true, Q, pi0, _ = gen_data(1, n_ppl, n_bms, n_obs, n_components, model_type=model_type, is_cut=is_cut, n_zscores=n_zscores, z_max=z_max, sigma_noise=sigma_noise, seq=[], fractions=[1], fwd_only=fwd_only, order=order, time_mean=[1/scale])
 else:
     X, lengths, jumps, labels, X0, stages_true, times, seq_true, Q, pi0, _ = gen_data(1, n_ppl, n_bms, n_obs, n_components, model_type=model_type, is_cut=is_cut, n_zscores=None, z_max=None, sigma_noise=sigma_noise, seq=[], fractions=[1], fwd_only=fwd_only, order=order, time_mean=[1/scale])
+
+if True:
+    n_x = np.round(np.sqrt(n_bms)).astype(int)
+    n_y = np.ceil(np.sqrt(n_bms)).astype(int)
+    fig, ax = plt.subplots(n_y, n_x, figsize=(10, 10))
+    for i in range(n_bms):
+        for j in range(len(lengths)):
+            nobs_i = lengths[j]
+            s_idx, e_idx = int(np.sum(lengths[:j])), int(np.sum(lengths[:j])+nobs_i)
+            ax[i // n_x, i % n_x].plot(stages_true[s_idx:e_idx],X[s_idx:e_idx,i])
+            ax[i // n_x, i % n_x].scatter(stages_true[s_idx:e_idx],X[s_idx:e_idx,i])
+            ax[i // n_x, i % n_x].set_title(biom_labels[i])
+#    plt.show()
 
 save_variables = {}
 save_variables["X"] = X
@@ -166,10 +179,11 @@ else:
     print ('Likelihood model not recognised! quit()')
     quit()
 
-fig, ax = plotting.mixture_model_grid(X0, labels, mixtures, biom_labels)
-for i in range(len(ax)):
-    for j in range(len(ax)-1):
-        ax[i,j].set_yscale('log')
+if model_type == 'GMM':
+    fig, ax = plotting.mixture_model_grid(X0, labels, mixtures, biom_labels)
+    for i in range(len(ax)):
+        for j in range(len(ax)-1):
+            ax[i,j].set_yscale('log')
 
 print ('True seq',seq_true[0])
 print ('MaxL seq',seq_model[0])
@@ -179,27 +193,68 @@ if not is_ebm:
     n_iter_inner = 100
 
 # refit with 100 iterations
-if obs_type == 'Var':
-    model = tebm_var.MixtureTEBM(X=X, lengths=lengths, jumps=jumps,
-                                 n_components=n_components, time_mean=time_mean, covariance_type="diag",
-                                 n_iter=n_iter_inner, tol=tol,
-                                 init_params=init_params, params=fit_params,
-                                 algorithm=algo, verbose=True, allow_nan=True,
-                                 fwd_only=fwd_only, order=order)
+if model_type == 'GMM':
+    if obs_type == 'Var':
+        model = tebm_var.MixtureTEBM(X=X, lengths=lengths, jumps=jumps,
+                                     n_components=n_components, time_mean=time_mean, covariance_type="diag",
+                                     n_iter=n_iter_inner, tol=tol,
+                                     init_params=init_params, params=fit_params,
+                                     algorithm=algo, verbose=True, allow_nan=True,
+                                     fwd_only=fwd_only, order=order)
+    else:
+        model = tebm_fix.MixtureTEBM(X=X,
+                                     lengths=lengths, 
+                                     n_stages=n_stages,
+                                     time_mean=time_mean,
+                                     n_iter=n_iter_inner,
+                                     fwd_only=fwd_only,
+                                     order=order,
+                                     algo=algo,
+                                     verbose=True)
 else:
-    model = tebm_fix.MixtureTEBM(X=X,
-                                 lengths=lengths, 
-                                 n_stages=n_stages,
-                                 time_mean=time_mean,
-                                 n_iter=n_iter_inner,
-                                 fwd_only=fwd_only,
-                                 order=order,
-                                 algo=algo,
-                                 verbose=True)
+    if obs_type == 'Var':
+        model = tebm_var.ZscoreTEBM(X=X,
+                                    lengths=lengths,
+                                    jumps=jumps,
+                                    n_components=n_components,
+                                    #                                    time_mean=time_mean,
+                                    covariance_type="diag",
+                                    n_iter=n_iter_inner,
+                                    init_params=init_params,
+                                    params=fit_params,
+                                    fwd_only=fwd_only,
+                                    order=order)#,
+                                    #                                    algo=algo)
+        print ('!')
+    else:
+        model = tebm_fix.ZscoreTEBM(X=X,
+                                    lengths=lengths, 
+                                    n_stages=n_stages,
+                                    time_mean=1/n_stages,
+                                    n_iter=n_iter_inner,
+                                    fwd_only=fwd_only,
+                                    order=order,
+                                    algo=algo)
+    
 model.S = seq_model[0]
 if model_type=='GMM':
     model.prob_mat = get_prob_mat(X, mixtures)
     model.mixtures = mixtures
+    model.fit()
+else:
+    # intialise z-score stuff
+    z_val_arr = np.array([[x+1 for x in range(n_zscores)]]*n_bms)
+    z_max_arr = np.array([z_max]*n_bms)
+    IX_vals = np.array([[x for x in range(model.n_features)]*n_zscores]).T
+    stage_biomarker_index = np.array([y for x in IX_vals.T for y in x])
+    stage_zscore = np.array([y for x in z_val_arr.T for y in x])
+    model.stage_biomarker_index = stage_biomarker_index.reshape(1,len(stage_biomarker_index))
+    model.stage_zscore = stage_zscore.reshape(1,len(stage_zscore))
+    model.min_biomarker_zscore = [0]*n_bms
+    model.max_biomarker_zscore = z_max_arr
+    model.covars_prior = np.tile(np.identity(1), (n_components, n_bms))
+    model.covars_ = model.covars_prior
+    model.means_ = model._get_means()
     model.fit()
 
 if is_ebm:
@@ -216,7 +271,8 @@ save_variables["stages_true"] = stages_true
 save_variables["Q_true"] = Q[0]
 save_variables["p_vec_true"] = pi0
 save_variables["seq_model"] = seq_model
-save_variables["Q_model"] = model.Q_
+if obs_type == 'Var':
+    save_variables["Q_model"] = model.Q_
 save_variables["p_vec_model"] = model.startprob_
 
 pickle_file = open('./'+fout_name, 'wb')
@@ -292,6 +348,7 @@ print ('np.sum(sojourns_reco)',round(np.sum(sojourns_reco),2))
 print ('np.sum(sojourns_true)',round(np.sum(sojourns_true),2))
 print ('np.abs(np.sum(sojourns_reco)-np.sum(sojourns_true))',np.abs(np.sum(sojourns_reco)-np.sum(sojourns_true)))
 print ('np.sqrt(np.sum(np.power(sojourns_reco-sojourns_true, 2))/len(sojourns))',np.sqrt(np.sum(np.power(sojourns_reco-sojourns_true, 2))/len(sojourns_reco)))
+
 # staging
 if obs_type == 'Fix':
     stages_model = model.stages(X, lengths)
@@ -387,7 +444,7 @@ if obs_type == 'Var':
     #    print ('sum(diag(Q_true)-diag(Q_reco))', np.abs(np.sum(np.abs(np.diag(Q[0]))-np.abs(np.diag(model.Q_)))))
     #    print ('sum(diag(Q_true)-diag(Q_reco))', np.sum(np.abs(np.diag(Q[0])-np.diag(model.Q_))))
     print ('sum(diag(Q_true)-diag(Q_reco))', np.sqrt(np.sum(np.power(np.diag(Q[0])-np.diag(model.Q_), 2))/model.Q_.shape[0]))
-
+plt.show()
 # write
 # write data
 if is_ebm:
